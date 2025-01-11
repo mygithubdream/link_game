@@ -69,9 +69,9 @@ var SprBox={
 		var _this=Sprite.createNew(gme, imgMrk);
 		var tickPar=_this.tick;
 		_this.mrk=0;
-		_this.rInd=0;
-		_this.cInd=0;
-		_this.shown=true;
+		_this.rInd=0;//row index
+		_this.cInd=0;//column index
+		_this.shown=true;//hidden or shown
 		_this.turn=[[-1,-1,-1],[-1,-1,-1]];
 
 		_this.tick=function(){
