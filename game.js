@@ -82,6 +82,7 @@ var Game={
 		}
 
 		_this.tick=function(){
+			//Regularly refresh the game
 			clearCanvas();
 			_this.sceneCur.tick();
 			setTimeout(_this.tick, 1000/60);

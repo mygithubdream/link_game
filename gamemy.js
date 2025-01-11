@@ -68,12 +68,13 @@ var SprBox={
 		var gme=gmeTmp;
 		var _this=Sprite.createNew(gme, imgMrk);
 		var tickPar=_this.tick;
-		_this.mrk=0;
+		_this.mrk=0;//当前方格的标识，如果两格的标识相同，就表示它们的图案相同
 		_this.rInd=0;//row index
 		_this.cInd=0;//column index
 		_this.shown=true;//hidden or shown
 		_this.turn=[[-1,-1,-1],[-1,-1,-1]];
-
+		//两组值。组1：三个值是基于横向的分别表示是否存在0折的路线，是否存在1折以内的路线，是否存在2折以内的路线，是为1，否为0，未检测为-1
+		//组2:同理，基于竖向
 		_this.tick=function(){
 			var ctx=gme.ctx;
 			tickPar();
@@ -170,33 +171,36 @@ var GameMy={
 
 		}
 
+		/**
+		 * 
+		 * @param {*} spr1 起始方格实例
+		 * @param {*} spr2 结束方格实例
+		 * @param {[]} needed 带有两个元素的数组，元素1：表示到达第二个方格的路线最终是横着到达的所需的最多折数。元素2：表示到达第二个方格的路线最终是竖着到达的所需的最多折数。初始值是[2,2]
+		 * @param {[]} vstRecur 表示一次路线递归探测的过程中，已经探测过的方格，不能在递归中出现第二次探测
+		 * @param {[]} route 记录有效通路的节点
+		 * @returns 两元素数组，元素1：值0表示横向，值1表示竖向。元素2：表示经过几折到达
+		 */
 		var judgeRoute=function(spr1,spr2,needed,vstRecur,route){
-			//console.log("p2:"+spr2.rInd+"---"+spr2.cInd+"   need row:col "+needed+"   vstRecur.length:"+vstRecur.length);
-			if(vstRecur.length>10){
-				console.log("");
-			}
 			if(spr1.rInd==spr2.rInd && Math.abs(spr1.cInd-spr2.cInd)==1 && needed[0]>=0){
 				return [0,0];
 			}
 			if(spr1.cInd==spr2.cInd && Math.abs(spr1.rInd-spr2.rInd)==1 && needed[1]>=0){
 				return [1,0];
 			}
-			var offset=[[0,-1],[0,1],[-1,0],[1,0]];//four grid around p2
+			var offset=[[0,-1],[0,1],[-1,0],[1,0]];//围绕结束方格的上下左右四个格的偏移，前两个元素横向偏移，后两个元素竖向偏移
 			for(let i=0;i<offset.length;i++){
 				if(needed[0]<0 && i<2){
-					continue;
+					continue;//如果i<2即将探测横向偏移的两个格，但need[0]<0(表示不需要横向偏移)
 				}
 				if(needed[1]<0 && i>=2){
-					continue;
+					continue;//同上，但是关于竖向偏移
 				}
 				var p2Pre={rInd:spr2.rInd+offset[i][0],cInd:spr2.cInd+offset[i][1]};
 				if(p2Pre.rInd<0 || p2Pre.rInd>=_this.sprBoxM.length || p2Pre.cInd<0 || p2Pre.cInd>=_this.sprBoxM.length){
-					//console.log("search continue p2Pre:"+p2Pre.rInd+" "+p2Pre.cInd);
 					continue;
 				}
-				var sprPre=_this.sprBoxM[p2Pre.rInd][p2Pre.cInd];
+				var sprPre=_this.sprBoxM[p2Pre.rInd][p2Pre.cInd];//到达spr2的前一个格子这里记做sprPre
 				if(sprPre.shown){
-					//console.log("search continue sprPre.shown:  "+sprPre.rInd+" "+sprPre.cInd+" "+sprPre.shown);
 					continue;
 				}
 				var sprPreExistInd=vstRecur.indexOf(sprPre);
@@ -204,12 +208,14 @@ var GameMy={
 					//console.log("vstRecur exist index:  "+sprPre.rInd+" "+sprPre.cInd+" "+sprPreExistInd);
 					continue;
 				}
-				var needR=i<2?needed[0]:needed[1]-1;
-				var needC=i<2?needed[0]-1:needed[1];
+				//上面三种情况是一些边界条件的探测，不符合的情况跳过
+				var needR=i<2?needed[0]:needed[1]-1;//if sprPre是横向偏移的格子，那到达sprPre方格的路线最终是横着到达的所需的最多折数，等于spr2的needed[0]。
+				var needC=i<2?needed[0]-1:needed[1];//if sprPre是横向偏移的格子，那到达sprPre方格的路线最终是竖着到达的所需的最多折数，等于spr2的needed[0]-1。
 				var exstR=0;
 				var exstC=0;
+				//为了免去重复计算，这里存储了以前计算过的值。如下：
 				if(needR>=0){
-					exstR=sprPre.turn[0][needR];
+					exstR=sprPre.turn[0][needR];//先尝试sprPre的turn数组里的值。
 				}
 				if(exstR==1){
 					return [0,needR];
@@ -232,7 +238,6 @@ var GameMy={
 				vstRecur.pop();
 				if(ret[0]>=0){
 				    //find a path
-					//route.push([sprPre.rInd,sprPre.cInd,ret[0],ret[1]].join("-"));
 					route.push(sprPre);
 					sprPre.turn[ret[0]][ret[1]]=1;
 					var tmpRet=[];
